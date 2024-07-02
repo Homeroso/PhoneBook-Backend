@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 const app = express()
+const Person = require('./models/person')
 
 morgan.token('body', function (req, res) { 
     return JSON.stringify(req.body) 
@@ -9,7 +11,6 @@ morgan.token('body', function (req, res) {
 
 app.use(express.json())
 app.use(cors())
-app.use(express.static('dist'))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
 let data = [
@@ -41,23 +42,22 @@ const generateId = () => {
 }
 
 app.get('/api/persons', (request, response) => (
-    response.json(data)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 ))
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = data.find(
-        person => person.id === id)
-    if (person) {
+    Person.findById(request.params.id).then(person => {
         response.json(person)
-    } else {
-        response.status(404).end()
-    }
+    })
 })
 
-app.get('/info', (request, response) => {
+app.get('/info', (request, response) => { 
     let date = new Date()
-    response.send(`<h4>Phonebook has info for ${data.length} people</h4> <p>${date}</p>`)
+    let count = Person.find({}).countDocuments()
+
+    response.send(`<h4>Phonebook has info for ${count} people</h4> <p>${date}</p>`)
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -86,19 +86,18 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    const person = {
+    const person = new Person({
         name: body.name,
         number: body.number,
-        id: generateId()
-    }
+    })
 
-    data = data.concat(person)
+    person.save().then(savedPerson => {
+        response.json(savedPerson)
+    })
 
-    response.json(person)
 })
 
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
