@@ -13,10 +13,33 @@ mongoose.connect(url)
     .catch(error => {
         console.log('error connecting to MongoDB:', error.message)
     })
+ 
+const numberCheck = (v) => {
+    return /^([0-9]+[-][0-9]+)$/.test(v)
+}
+
+const validNumber = (v) => {
+    console.log('Position: ', v.search('-'))
+    return v.search('-') === 2 || v.search('-') === 3
+}
+
+const validators = [
+    {validator: numberCheck, message: props => `${props.value} is not a valid phone number!`},
+    {validator: validNumber, message: props => `${props.value} is not a valid phone number!`}
+]
 
 const personSchema = mongoose.Schema({
-    name: String,
-    number: Number
+    name: {
+        type: String,
+        minLength: 3,
+        required: true
+    },
+    number: {
+        type: String,
+        minLength: 8,
+        required: true,
+        validate: validators
+    }
 })
 
 personSchema.set('toJSON', {
